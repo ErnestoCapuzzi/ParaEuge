@@ -34,51 +34,6 @@ function initAudio() {
     dataArray = new Uint8Array(bufferLength);
 }
 
-function generateSmileyShape(positions) {
-    const faceRadius = 10; // Radio de la cara
-    const eyeRadius = 1.5; // Radio de los ojos
-    const eyeOffsetX = 4; // Distancia horizontal de los ojos
-    const eyeOffsetY = 3; // Distancia vertical de los ojos
-    const mouthRadius = 5; // Radio de la sonrisa
-    const mouthAngleStart = Math.PI * 1.1; // Inicio de la sonrisa
-    const mouthAngleEnd = Math.PI * 1.9; // Fin de la sonrisa
-
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-        let x, y, z;
-        const part = i % 3;
-
-        if (part === 0) {
-            // Cara (circunferencia)
-            const angle = Math.random() * 2 * Math.PI;
-            const distance = Math.sqrt(Math.random()) * faceRadius;
-            x = distance * Math.cos(angle);
-            y = distance * Math.sin(angle);
-            z = (Math.random() - 0.5) * 0.5;
-        } else if (part === 1) {
-            // Ojos
-            const isLeftEye = Math.random() < 0.5;
-            const angle = Math.random() * 2 * Math.PI;
-            const distance = Math.sqrt(Math.random()) * eyeRadius;
-            x = (isLeftEye ? -eyeOffsetX : eyeOffsetX) + distance * Math.cos(angle);
-            y = eyeOffsetY + distance * Math.sin(angle);
-            z = (Math.random() - 0.5) * 0.2;
-        } else {
-            // Boca (arco de la sonrisa)
-            const angle = mouthAngleStart + Math.random() * (mouthAngleEnd - mouthAngleStart);
-            x = mouthRadius * Math.cos(angle);
-            y = -4 + mouthRadius * Math.sin(angle);
-            z = (Math.random() - 0.5) * 0.2;
-        }
-
-        positions[i * 3] = x;
-        positions[i * 3 + 1] = y;
-        positions[i * 3 + 2] = z;
-
-        particlePositions.push(new THREE.Vector3(x, y, z));
-        particleVelocities.push(new THREE.Vector3(0, 0, 0));
-    }
-}
-
 function createStarField() {
     const starGeometry = new THREE.BufferGeometry();
     const starCount = 1500;
@@ -103,6 +58,40 @@ function createStarField() {
     scene.add(starParticles);
 }
 
+function createMessage() {
+    const textDiv = document.createElement('div');
+    textDiv.id = 'text-overlay';
+    textDiv.innerText = 'Buen viaje Euge';
+    document.body.appendChild(textDiv);
+
+    // Estilo del mensaje
+    const style = document.createElement('style');
+    style.innerHTML = `
+        #text-overlay {
+            position: absolute;
+            top: 10%; /* Más arriba */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            color: #00ffff; /* Turquesa */
+            font-family: 'Arial', sans-serif;
+            text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+            opacity: 0;
+            transition: opacity 3s ease-in-out;
+            pointer-events: none;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Mostrar el mensaje una vez
+    setTimeout(() => {
+        textDiv.style.opacity = '1';
+        setTimeout(() => {
+            textDiv.style.opacity = '0';
+        }, 5000); // Mantener visible durante 5 segundos
+    }, 1000); // Aparecer después de 1 segundo
+}
+
 function init() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -120,17 +109,21 @@ function init() {
     const velocities = new Float32Array(PARTICLE_COUNT * 3);
     const colors = new Float32Array(PARTICLE_COUNT * 3);
 
-    generateSmileyShape(positions);
-
     for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const angle = Math.random() * 2 * Math.PI;
+        const distance = Math.sqrt(Math.random()) * 10;
+
+        positions[i * 3] = distance * Math.cos(angle);
+        positions[i * 3 + 1] = distance * Math.sin(angle);
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
+
         velocities[i * 3] = 0;
         velocities[i * 3 + 1] = 0;
         velocities[i * 3 + 2] = 0;
 
-        // Turquesa con brillo
-        colors[i * 3] = 0.0; // Rojo
-        colors[i * 3 + 1] = 1.0; // Verde
-        colors[i * 3 + 2] = 0.8; // Azul
+        colors[i * 3] = 0.0;
+        colors[i * 3 + 1] = 1.0;
+        colors[i * 3 + 2] = 0.8;
     }
 
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -142,14 +135,13 @@ function init() {
         vertexColors: true,
         transparent: true,
         blending: THREE.AdditiveBlending,
-        emissive: new THREE.Color(0x00ffff), // Turquesa brillante
-        emissiveIntensity: 1.2,
     });
 
     particles = new THREE.Points(geometry, material);
     scene.add(particles);
 
     createStarField();
+    createMessage(); // Agregar mensaje
     initAudio();
     animate();
 }
@@ -171,15 +163,13 @@ function animate() {
 
             const intensity = (dataArray[i % dataArray.length] / 255) * 3;
 
-            // Deformación dinámica
             positions[index] += intensity * 0.2 * Math.sin(i + Date.now() * 0.001);
             positions[index + 1] += intensity * 0.2 * Math.cos(i + Date.now() * 0.001);
             positions[index + 2] += intensity * 0.2 * Math.sin(i + Date.now() * 0.002);
 
-            const original = particlePositions[i];
-            velocities[index] += (original.x - px) * 0.01;
-            velocities[index + 1] += (original.y - py) * 0.01;
-            velocities[index + 2] += (original.z - pz) * 0.01;
+            velocities[index] += (0 - px) * 0.01;
+            velocities[index + 1] += (0 - py) * 0.01;
+            velocities[index + 2] += (0 - pz) * 0.01;
 
             positions[index] += velocities[index];
             positions[index + 1] += velocities[index + 1];
@@ -189,10 +179,9 @@ function animate() {
             velocities[index + 1] *= 0.9;
             velocities[index + 2] *= 0.9;
 
-            // Aumentar el brillo de las partículas con la intensidad
-            colors[index] = intensity * 0.2; // Rojo
-            colors[index + 1] = intensity * 0.8; // Verde
-            colors[index + 2] = intensity; // Azul (turquesa)
+            colors[index] = intensity * 0.2;
+            colors[index + 1] = intensity * 0.8;
+            colors[index + 2] = intensity;
         }
 
         particles.geometry.attributes.position.needsUpdate = true;
@@ -212,6 +201,7 @@ window.addEventListener('resize', () => {
 });
 
 init();
+
 
 
 
